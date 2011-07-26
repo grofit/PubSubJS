@@ -38,21 +38,22 @@
 		<script type="text/javascript" src="pubsub.js"></script>
 		
 		<script type="text/javascript">
+			var pubSub = new PubSub({debugMode: true, allowDuplicates: false});
 			var eventName = "raise-event";
 			var DisplayAlertMessage = function(message) {
 				alert(message);
 			};
 			
 			$("#add-event-listener-link").click(function(){ 
-				PubSub.subscribe(eventName, DisplayAlertMessage);
+				pubSub.subscribe(eventName, DisplayAlertMessage);
 			});
 			
 			$("#raise-event-listener-link").click(function(){ 
-				PubSub.publish(eventName, $("#event-message").val()); 
+				pubSub.publish(eventName, $("#event-message").val()); 
 			});
 			
 			$("#remove-event-listener-link").click(function(){ 
-				PubSub.unsubscribe(eventName, DisplayAlertMessage); 
+				pubSub.unsubscribe(eventName, DisplayAlertMessage); 
 			});
 		</script>
 	</body>

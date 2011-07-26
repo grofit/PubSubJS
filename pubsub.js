@@ -59,11 +59,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *          PubSub.unsubscribe( 'MY MESSAGE', mySubscriber );
  *      }, 0)
 **/ 
-var PubSub = {};
-(function(p){
+
+/**
+	Config object supports:
+	
+	- debugMode: true/false (Will stop debug aid exceptions)
+	- allowDuplicates: true/false (Will allow the same function to be bound to the same event type more than once)
+
+**/
+function PubSub(config){
     "use strict";
-    
-    var messages = [];
+    	
+	var messages = [];
 
     var throwException = function(e){
         return function() { throw e; };
@@ -76,14 +83,26 @@ var PubSub = {};
 		}
 		return false;
 	}
+	
+	var isInDebugMode = function() {
+		if(typeof(config) === "undefined") { return false; }
+		return config.hasOwnProperty("debugMode") ? config.debugMode : false;
+	}
+	
+	var allowDuplicateBindings = function() {
+		if(typeof(config) === "undefined") { return false; }
+		return config.hasOwnProperty("allowDuplicates") ? config.allowDuplicates : false;
+	}
     
     var publish = function( message, data, sync ){
         
         // dont let undefined messages through
         if(typeof(message) === "undefined" || message === "") { 
-            var errorMessage = "Cannot allow empty/undefined messages to be published [" + data + " ]";
-            setTimeout(throwException(errorMessage), 0);
-            return;
+			if(isInDebugMode())	{
+				var errorMessage = "Cannot allow empty/undefined messages to be published [" + data + " ]";
+				setTimeout(throwException(errorMessage), 0);
+            }
+			return;
         }
         
         // if there are no subscribers to this message, just return here
@@ -97,9 +116,11 @@ var PubSub = {};
                 try {
                     subscribers[i]( data );
                 } catch( e ){
-                    var errorMessage = "Cannot find any subscribers for [" + message + "] - ";
-                    errorMessage += "Internal Error = {" + e + "}";
-                    setTimeout( throwException(errorMessage), 0);
+					if(isInDebugMode())	{
+						var errorMessage = "Cannot find any subscribers for [" + message + "] - ";
+						errorMessage += "Internal Error = {" + e + "}";
+						setTimeout( throwException(errorMessage), 0);
+					}
                 }
             }
         };
@@ -112,7 +133,7 @@ var PubSub = {};
         return true;
     };
 
-    p.version = '0.1.5';
+    this.version = '0.2';
     
     /**
      *  PubSub.publish( message[, data] ) -> Boolean
@@ -121,7 +142,7 @@ var PubSub = {};
      *  - sync (Boolean): Forces publication to be syncronous, which is more confusing, but faster
      *  Publishes the the message, passing the data to it's subscribers
     **/
-    p.publish = function( message, data ){
+    this.publish = function( message, data ){
         return publish( message, data, false );
     };
     
@@ -132,7 +153,7 @@ var PubSub = {};
      *  - sync (Boolean): Forces publication to be syncronous, which is more confusing, but faster
      *  Publishes the the message synchronously, passing the data to it's subscribers
     **/
-    p.publishSync = function( message, data ){
+    this.publishSync = function( message, data ){
         return publish( message, data, true );
     };
 
@@ -142,30 +163,36 @@ var PubSub = {};
      *  - func (Function): The function to call when a new message is published
      *  Subscribes the passed function to the passed message.
     **/
-    p.subscribe = function( message, func ){
+    this.subscribe = function( message, func ){
 
         // dont let undefined messages through
         if(typeof(message) === "undefined" || message === "") { 
-            var messageErrorMessage = "Cannot allow subscribing to empty/undefined messages for callback [" + func + "]";
-            setTimeout(throwException(messageErrorMessage), 0);
-            return;
+			if(isInDebugMode())	{
+				var messageErrorMessage = "Cannot allow subscribing to empty/undefined messages for callback [" + func + "]";
+				setTimeout(throwException(messageErrorMessage), 0);
+            }
+			return;
         }
         
         // dont let undefined functions through
         if(typeof(func) === "undefined") { 
-            var functionErrorMessage = "Cannot allow subscribing of undefined function callback for message [" + message + "] ";
-            setTimeout(throwException(functionErrorMessage), 0);
-            return;
+			if(isInDebugMode())	{
+				var functionErrorMessage = "Cannot allow subscribing of undefined function callback for message [" + message + "] ";
+				setTimeout(throwException(functionErrorMessage), 0);
+            }
+			return;
         }
 
         // message is not registered yet
         if ( !messages.hasOwnProperty( message ) ){
             messages[message] = [];
         }
-		else if( DoesEntryAlreadyExist(messages[message], func) ) {
-			var duplicationErrorMessage = "Cannot allow duplicate subscribing of callbacks for message [" + message + "] ";
-            setTimeout(throwException(duplicationErrorMessage), 0);
-            return;
+		else if( !allowDuplicateBindings() && DoesEntryAlreadyExist(messages[message], func) ) {
+			if(isInDebugMode())	{
+				var duplicationErrorMessage = "Cannot allow duplicate subscribing of callbacks for message [" + message + "] ";
+				setTimeout(throwException(duplicationErrorMessage), 0);
+            }
+			return;
 		}
 
 		// Modified to just pass in function
@@ -178,7 +205,7 @@ var PubSub = {};
      *  - func (Function): The function currently subscribed that needs removing
      *  Unsubscribes a specific subscriber from a specific message
     **/
-    p.unsubscribe = function( message, func ){
+    this.unsubscribe = function( message, func ){
 
 		if ( messages.hasOwnProperty( message ) ){
 			for ( var i = 0, j = messages[message].length; i < j; i++ ){
@@ -192,10 +219,10 @@ var PubSub = {};
         return false;
     };
 
-    p.getSubscribersForMessage = function(message) {
+    this.getSubscribersForMessage = function(message) {
         if ( messages.hasOwnProperty( message ) ){
             return messages[message];
         }
     };
 
-}(PubSub));
+}
