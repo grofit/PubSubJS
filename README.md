@@ -28,9 +28,7 @@ Don't say I didn't warn you.
     };
 
     // add the function to the list of subscribers to a particular message
-    // we're keeping the returned token, in order to be able to unsubscribe 
-    // from the message later on
-    var token = PubSub.subscribe( 'MY MESSAGE', mySubscriber );
+    PubSub.subscribe( 'MY MESSAGE', mySubscriber );
 
     // publish a message asyncronously
     PubSub.publish( 'MY MESSAGE', 'hello world!' );
@@ -44,7 +42,7 @@ Don't say I didn't warn you.
     // unsubscribe from further messages, using setTimeout to allow for easy 
     // pasting of this code into an example :-)
     setTimeout(function(){
-        PubSub.unsubscribe( token );
+        PubSub.unsubscribe( 'MY MESSAGE', mySubscriber );
     }, 0);
 
 ## Minified version

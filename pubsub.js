@@ -1,5 +1,6 @@
 /*
 Copyright (c) 2010 Morgan Roderick http://roderick.dk
+- Edited to remove token constraint 2011
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -43,7 +44,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  *      // add the function to the list of subscribers to a particular message
  *      // we're keeping the returned token, in order to be able to unsubscribe from the message later on
- *      var token = PubSub.subscribe( 'MY MESSAGE', mySubscriber );
+ *      PubSub.subscribe( 'MY MESSAGE', mySubscriber );
  *
  *      // publish a message asyncronously
  *      PubSub.publish( 'MY MESSAGE', 'hello world!' );
@@ -55,17 +56,28 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *      
  *      // unsubscribe from further messages, using setTimeout to allow for easy pasting of this code into an example :-)
  *      setTimeout(function(){
- *          PubSub.unsubscribe( token );
+ *          PubSub.unsubscribe( 'MY MESSAGE', mySubscriber );
  *      }, 0)
 **/ 
 var PubSub = {};
 (function(p){
     "use strict";
     
-    var messages = {};
-    var lastUid = -1;
+    var messages = [];
+
+    var throwException = function(e){
+        return function() { throw e; };
+    }; 
     
     var publish = function( message, data, sync ){
+        
+        // dont let undefined messages through
+        if(typeof(message) === "undefined" || message === "") { 
+            var errorMessage = "Cannot allow empty/undefined messages to be published [" + data + " ]";
+            setTimeout(throwException(errorMessage), 0);
+            return;
+        }
+        
         // if there are no subscribers to this message, just return here
         if ( !messages.hasOwnProperty( message ) ){
             return false;
@@ -73,16 +85,13 @@ var PubSub = {};
         
         var deliverMessage = function(){
             var subscribers = messages[message];
-            var throwException = function(e){
-                return function(){
-                    throw e;
-                };
-            }; 
             for ( var i = 0, j = subscribers.length; i < j; i++ ){
                 try {
-                    subscribers[i].func( message, data );
+                    subscribers[i]( message, data );
                 } catch( e ){
-                    setTimeout( throwException(e), 0);
+                    var errorMessage = "Cannot find any subscribers for [" + message + "] - ";
+                    errorMessage += "Internal Error = {" + e + "}";
+                    setTimeout( throwException(errorMessage), 0);
                 }
             }
         };
@@ -95,7 +104,7 @@ var PubSub = {};
         return true;
     };
 
-    p.version = '0.1';
+    p.version = '0.1.5';
     
     /**
      *  PubSub.publish( message[, data] ) -> Boolean
@@ -120,42 +129,60 @@ var PubSub = {};
     };
 
     /**
-     *  PubSub.subscribe( message, func ) -> String
+     *  PubSub.subscribe( message, func )
      *  - message (String): The message to subscribe to
      *  - func (Function): The function to call when a new message is published
-     *  Subscribes the passed function to the passed message. Every returned token is unique and should be stored if you need to unsubscribe
+     *  Subscribes the passed function to the passed message.
     **/
     p.subscribe = function( message, func ){
+
+        // dont let undefined messages through
+        if(typeof(message) === "undefined" || message === "") { 
+            var messageErrorMessage = "Cannot allow subscribing to empty/undefined messages for callback [" + func + "]";
+            setTimeout(throwException(messageErrorMessage), 0);
+            return;
+        }
+        
+        // dont let undefined functions through
+        if(typeof(func) === "undefined") { 
+            var functionErrorMessage = "Cannot allow subscribing of undefined function callback for message [" + message + "] ";
+            setTimeout(throwException(functionErrorMessage), 0);
+            return;
+        }
+
         // message is not registered yet
         if ( !messages.hasOwnProperty( message ) ){
             messages[message] = [];
         }
-        
-        // forcing token as String, to allow for future expansions without breaking usage
-        // and allow for easy use as key names for the 'messages' object
-        var token = (++lastUid).toString();
-        messages[message].push( { token : token, func : func } );
-        
-        // return token for unsubscribing
-        return token;
+
+		// Modified to just pass in function
+        messages[message].push( func );
     };
 
     /**
      *  PubSub.unsubscribe( token ) -> String | Boolean
-     *  - token (String): The token of the function to unsubscribe
-     *  Unsubscribes a specific subscriber from a specific message using the unique token
+     *  - message (String): The message type to unsubscribe from
+     *  - func (Function): The function currently subscribed that needs removing
+     *  Unsubscribes a specific subscriber from a specific message
     **/
-    p.unsubscribe = function( token ){
-        for ( var m in messages ){
-            if ( messages.hasOwnProperty( m ) ){
-                for ( var i = 0, j = messages[m].length; i < j; i++ ){
-                    if ( messages[m][i].token === token ){
-                        messages[m].splice( i, 1 );
-                        return token;
-                    }
-                }
-            }
-        }
+    p.unsubscribe = function( message, func ){
+
+		if ( messages.hasOwnProperty( message ) ){
+			for ( var i = 0, j = messages[message].length; i < j; i++ ){
+				if ( messages[message][i] === func ){
+					// Remove the element
+					messages[message].splice( i, 1 );
+					return true;
+				}
+			}
+		}
         return false;
     };
+
+    p.getSubscribersForMessage = function(message) {
+        if ( messages.hasOwnProperty( message ) ){
+            return messages[message];
+        }
+    };
+
 }(PubSub));

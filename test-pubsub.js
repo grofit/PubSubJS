@@ -11,63 +11,7 @@
         return "my unique String number " + this.uid.toString();
     };
 
-    // makes sure that all tokens in the passed array are different
-    var assertAllTokensDifferent = function( tokens ){
-        var length = tokens.length;
-        assert( tokens.length > 0 );
-        // compare all tokens
-        for ( var j = 0; j < length; j++ ){
-            for ( var k = j + 1; k < length; k++ ){
-                assert( tokens[j] !== tokens[k] );
-            }
-        }
-
-        // make sure we actually tested something
-        assertEquals( length, j );
-        assertEquals( length, k );
-    };
-
-    TestCase( "PubSub", {
-        "test subscribe method should return token as String" : function(){
-            var func = function(){};
-            var message = getUniqueString();
-            var token = PubSub.subscribe( message , func );
-            assertString( token );
-        },
-
-        "test subscribe method should return new token for several subscribtions with same function" : function(){
-            var func = function(){};
-            var tokens = [];
-            var iterations = 10;
-            var message = getUniqueString();
-
-            // build an array of tokens
-            for ( var i = 0; i < iterations; i++ ){
-                tokens.push( PubSub.subscribe( message, func ) );
-            }
-            // make sure all tokens are different
-            assertAllTokensDifferent( tokens );
-        },
-
-        "test subscribe method should return unique token for unique functions" : function(){
-            var tokens = [];
-            var iterations = 10;
-            var message = getUniqueString();
-
-            // build an array of tokens, passing in a different function for each subscription
-            for ( var i = 0; i < iterations; i++ ){
-                var func = (function( value ){
-                    return function(){
-                        return value;
-                    };
-                }(i));
-                tokens.push( PubSub.subscribe( message, func ) );
-            }
-
-            // make sure all tokens are different
-            assertAllTokensDifferent( tokens );        
-        },
-
+   TestCase( "PubSub", {
         "test publish method should return false if there are no subscribers" : function(){
             var message = getUniqueString();
             assertFalse( PubSub.publish( message ) );
@@ -185,31 +129,21 @@
             assert( spy2.called );        
         },
 
-        "test unsubscribe method should return token when succesful" : function(){
-            var func = function(){};
-            var message = getUniqueString();
-            var token = PubSub.subscribe( message, func);
-
-            var result = PubSub.unsubscribe( token );
-            assertEquals( token, result );        
-        },
-
         "test unsubscribe method should return false when unsuccesful" : function(){
 
             // first, let's try a completely unknown token
-            var unknownToken = 'my unknown token';
-            var result = PubSub.unsubscribe( unknownToken );
+			var dummyFunction = function(){};
+			var dummyMessageType = getUniqueString();
+			var result = PubSub.unsubscribe( dummyMessageType, dummyFunction );
             assertFalse( result );
 
-            // now let's try unsubscribing the same method twice
-            var func = function(){};
-            var message = getUniqueString();
-            var token = PubSub.subscribe( message, func );
+            // now let's try unsubscribing the same method twice after subscribing it
+            PubSub.subscribe( dummyMessageType, dummyFunction );
 
             // unsubscribe once
-            PubSub.unsubscribe( token );
+            PubSub.unsubscribe( dummyMessageType, dummyFunction );
             // unsubscribe again
-            assertFalse( PubSub.unsubscribe( token ) );        
+            assertFalse( PubSub.unsubscribe( dummyMessageType, dummyFunction ) );        
         }
     });
 }(this));
