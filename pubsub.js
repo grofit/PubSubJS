@@ -68,6 +68,14 @@ var PubSub = {};
     var throwException = function(e){
         return function() { throw e; };
     }; 
+	
+	var DoesEntryAlreadyExist = function(array, entry) {
+		var i = array.length;
+		while (i--) {
+			if (array[i] === entry) { return true; }
+		}
+		return false;
+	}
     
     var publish = function( message, data, sync ){
         
@@ -87,7 +95,7 @@ var PubSub = {};
             var subscribers = messages[message];
             for ( var i = 0, j = subscribers.length; i < j; i++ ){
                 try {
-                    subscribers[i]( message, data );
+                    subscribers[i]( data );
                 } catch( e ){
                     var errorMessage = "Cannot find any subscribers for [" + message + "] - ";
                     errorMessage += "Internal Error = {" + e + "}";
@@ -154,6 +162,11 @@ var PubSub = {};
         if ( !messages.hasOwnProperty( message ) ){
             messages[message] = [];
         }
+		else if( DoesEntryAlreadyExist(messages[message], func) ) {
+			var duplicationErrorMessage = "Cannot allow duplicate subscribing of callbacks for message [" + message + "] ";
+            setTimeout(throwException(duplicationErrorMessage), 0);
+            return;
+		}
 
 		// Modified to just pass in function
         messages[message].push( func );

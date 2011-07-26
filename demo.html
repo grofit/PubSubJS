@@ -1,0 +1,59 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>PubSub Example</title>
+		
+		<style type="text/css">
+			body {
+				font-size: 0.8em;
+			}
+			
+			input {
+				width: 200px;
+				padding: 5px;
+				margin-left: 0px;
+			}
+			
+			a {
+				display: block;
+				width: 125px;
+				margin: 10px;
+			}
+			
+			#raise-event-listener-link {
+				display: inline-block;
+				margin-bottom: 0px;
+			}
+		</style>
+	</head>
+	<body>
+		<div>
+			<a id="add-event-listener-link" href="#">Add event listener</a>
+			<a id="raise-event-listener-link" href="#">Raise an alert message</a>
+			<input id="event-message" type="text"></input>
+			<a id="remove-event-listener-link" href="#">Remove event listener</a>
+		</div>
+
+		<script type="text/javascript" src="benchmarks/jquery.min.js"></script>
+		<script type="text/javascript" src="pubsub.js"></script>
+		
+		<script type="text/javascript">
+			var eventName = "raise-event";
+			var DisplayAlertMessage = function(message) {
+				alert(message);
+			};
+			
+			$("#add-event-listener-link").click(function(){ 
+				PubSub.subscribe(eventName, DisplayAlertMessage);
+			});
+			
+			$("#raise-event-listener-link").click(function(){ 
+				PubSub.publish(eventName, $("#event-message").val()); 
+			});
+			
+			$("#remove-event-listener-link").click(function(){ 
+				PubSub.unsubscribe(eventName, DisplayAlertMessage); 
+			});
+		</script>
+	</body>
+</html>
